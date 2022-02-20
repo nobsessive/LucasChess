@@ -10,6 +10,7 @@ import tkinter as tk
 
 from PIL import Image, ImageTk
 
+import config
 from GameRules import GR
 from count import Count
 
@@ -45,18 +46,11 @@ class ChessBoard(tk.Tk):
         self.currentstep = 0
         self.bplayer = int(HumanPlayBlack)  # human 1, ai 0
         self.wplayer = int(HumanPlayWhite)
-        self.cols = 6
-        self.rows = 6
+        self.cols = config.board_cols
+        self.rows = config.board_rows
         self.img_backup = {}
         self.pieces = {}
-        self.state = [
-            [0, 0, 0, -1, 0, 0],
-            [0, 0, 0, 0, 0, 0],
-            [-1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 1],
-            [0, 0, 0, 0, 0, 0],
-            [0, 0, 1, 0, 0, 0]
-        ]
+        self.state = config.init_chess_state
 
         # -- ui
         # super(ChessBoard, self).__init__()
@@ -346,7 +340,7 @@ class ChessBoard(tk.Tk):
         # move2 to move3
         dr = self.select3[0] - self.select2[0]
         dc = self.select3[1] - self.select2[1]
-        if abs(dr) > 1 or abs(dc) > 1:
+        if (abs(dr) > 1 or abs(dc) > 1) or (dr == 0 and dc == 0):
             return False
 
         return True

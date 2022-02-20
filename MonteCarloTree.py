@@ -1,6 +1,5 @@
 # Copyright (c) [2020] [P.H.]
 import copy
-import os
 
 import numpy as np
 
@@ -44,10 +43,10 @@ class MCTS():
         self.nn = MyModel(ModelConfig())
         # =================================================================================
         #  Load Model Here
-        p = os.path.join(os.getcwd(), "lucas_model")
-        self.nn.loadModel(p)
-
-        print("Model Loaded Successfully")
+        # p = os.path.join(os.getcwd(), "lucas_model")
+        # self.nn.loadModel(p)
+        #
+        # print("Model Loaded Successfully")
         # ==================================================================================
 
     def addRoot(self, state, turn):

@@ -4,6 +4,8 @@
 # from MAchess import Game
 import copy
 
+import config
+
 
 class Move:
     def __init__(self, r1, c1, r2, c2, p):
@@ -17,19 +19,14 @@ class Move:
 class GR:
     def __init__(self):
         # self.game=Game()
-        self.cols = 6
-        self.rows = 6
-        self.initialBoard = [
-            [0, 0, 0, -1, 0, 0],
-            [0, 0, 0, 0, 0, 0],
-            [-1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 1],
-            [0, 0, 0, 0, 0, 0],
-            [0, 0, 1, 0, 0, 0]
-        ]
+        self.cols = config.board_cols
+        self.rows = config.board_rows
+
+        self.initialBoard = config.init_chess_state
         self.initialGameResult = 0
         self.nonePendingResults = [1, -1]
         self.initialTurn = 1
+        self.pick_piece_thrs = self.cols * self.rows * 8  # threshold for picking up a queen
 
     # export functions
     def getAllowedMoves(self, board, turn, mode='coord'):
@@ -54,7 +51,7 @@ class GR:
             t = []
             t += self.gmove(b, board, mode)
             for i in t:
-                s.append(i + 288)
+                s.append(i + self.pick_piece_thrs)
         return s
 
     def judge(self, board, turn):
@@ -73,6 +70,8 @@ class GR:
         board[a[4]][a[5]] = 2
         return board
 
+    # determine move coordinate by action number
+    #
     def actn2move(self, actn, board, turn):
         x, y = self.findPiece(board, turn)
         a = x
@@ -85,9 +84,10 @@ class GR:
             if x[1] > y[1]:
                 a = y
                 b = x
-        if actn > 287:
+
+        if actn >= self.pick_piece_thrs:
             u = b
-            actn -= 288
+            actn -= self.pick_piece_thrs
         else:
             u = a
         r1 = u[0]
@@ -169,6 +169,8 @@ class GR:
                 p.append([r - i, c + i])
         return p
 
+    # generate every possible shift of a piece
+    # designed to follow by gm2 which places every possible obstacle around a piece
     def gm1(self, coord, board):
         p = []
         p += self.erow(coord, board)
@@ -176,6 +178,7 @@ class GR:
         p += self.edig(coord, board)
         return p
 
+    # denoted on comment gm1
     def gm2(self, coord, board, mode='coord'):
         d = []
         r, c = coord
@@ -211,6 +214,8 @@ class GR:
                         d.append(k[ii][jj])
         return d
 
+    # the following function
+    # generates every legal move for a specific board with regard to mode
     def gmove(self, coord, board, mode):
         s = []
         x, y = coord

@@ -10,6 +10,7 @@ from collections import deque
 
 import numpy as np
 
+import config as game_config
 from GameRules import GR
 from MonteCarloTree import MCTS, MCTconfig
 from count import GameSignal, Count
@@ -44,7 +45,7 @@ class BrainMemory:
 class Brain:
     def __init__(self, param=None):
         self.HOME_PATH = param
-        self.mct = MCTS(50, MCTconfig())
+        self.mct = MCTS(game_config.mct_simulate_num, MCTconfig())
         self.gr = GR()
         self.gcnt = Count()
         self.epsilon = 0.2  # epsilon greedy

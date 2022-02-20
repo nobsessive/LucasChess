@@ -11,6 +11,8 @@ import random
 import numpy as np
 import tensorflow as tf
 
+import config as game_config
+
 
 class ModelConfig:
     def __init__(self):
@@ -20,9 +22,10 @@ class ModelConfig:
 
 
 class MyModel:
-    def __init__(self, config, input_shape=(36, 36, 4), output_shape=(289)):
+    def __init__(self, config, input_shape=(game_config.board_rows ** 2, game_config.board_cols ** 2, 4),
+                 output_shape=(289)):
         self.input_shape = input_shape
-        self.output_shape1 = 576  # the number of pi=2*6*6*8
+        self.output_shape1 = 2 * game_config.board_rows * game_config.board_cols * 8  # the number of pi=2*6*6*8
         self.output_shape2 = 1  # the number of v
         self._build_model()
         self.config = config
@@ -45,11 +48,13 @@ class MyModel:
         return self.getPredict(a)
 
     def state2input(self, state, turn):
-        a = np.zeros((36, 36, 4), dtype=float)
+        r = game_config.board_rows
+        c = game_config.board_cols
+        a = np.zeros((r * r, c * c, 4), dtype=float)
         if turn == -1:
             turn = 0
-        for i in range(6):
-            for j in range(6):
+        for i in range(r):
+            for j in range(c):
                 a[i, j, 0] = turn
                 if state[i][j] == 1:  # white
                     a[i, j, 1] = 1
@@ -189,8 +194,8 @@ class MyModel:
             for j in range(batch_size):
                 states.append(sample[j][0])
                 # piv.append(sample[j][1])
-                pi.append(sample[j][1][0:576])
-                v.append(sample[j][1][576])
+                pi.append(sample[j][1][0:int(2 * game_config.pick_piece_thrs)])
+                v.append(sample[j][1][int(2 * game_config.pick_piece_thrs)])
                 turn.append(sample[j][2])
 
             x = []
