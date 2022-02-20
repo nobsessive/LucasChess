@@ -22,7 +22,7 @@ class GR:
         self.cols = config.board_cols
         self.rows = config.board_rows
 
-        self.initialBoard = config.init_chess_state
+        self.initialBoard = copy.deepcopy(config.init_chess_state)
         self.initialGameResult = 0
         self.nonePendingResults = [1, -1]
         self.initialTurn = 1

@@ -50,7 +50,7 @@ class ChessBoard(tk.Tk):
         self.rows = config.board_rows
         self.img_backup = {}
         self.pieces = {}
-        self.state = config.init_chess_state
+        self.state = copy.deepcopy(config.init_chess_state)
 
         # -- ui
         # super(ChessBoard, self).__init__()
