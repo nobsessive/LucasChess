@@ -16,8 +16,8 @@ import config as game_config
 
 class ModelConfig:
     def __init__(self):
-        self.train_loop = 5
-        self.batch_size = 32
+        self.train_loop = 3
+        self.batch_size = 50
         self.epochs = 3
 
 
@@ -129,7 +129,7 @@ class MyModel:
         block_layers = [3, 4, 6, 3]
         filter_size = 64
         # Step 3 Add the Resnet Blocks
-        for i in range(1):
+        for i in range(2):
             if i == 0:
                 # For sub-block 1 Residual/Convolutional block not needed
                 for j in range(block_layers[i]):
@@ -150,13 +150,15 @@ class MyModel:
         pi_head = tf.keras.layers.Dense(self.output_shape1, activation='relu', name="pi_head")(x)
         v_head = tf.keras.layers.Dense(self.output_shape2, activation='softmax', name="v_head")(x)
         self.model = tf.keras.models.Model(inputs=x_input, outputs=[pi_head, v_head], name="ResNet_1_2")
+        opt = tf.keras.optimizers.SGD(learning_rate=0.01)
         self.model.compile(
             loss={"pi_head": "categorical_crossentropy", "v_head": "mean_squared_error"},
-            optimizer="sgd",
+            optimizer=opt,
             loss_weights={"pi_head": 1, "v_head": 1},
             run_eagerly=True  # enable tensor.numpy()
         )
         # self.model.compile(loss='categorical_crossentropy', optimizer="sgd", loss_weights={"pi_head": 1, "v_head": 1})
+        self.model.summary()
         return
 
     # return [array of stepn [array of 2[nparray of 576 , nparray of 1]]] x
@@ -195,7 +197,7 @@ class MyModel:
                 states.append(sample[j][0])
                 # piv.append(sample[j][1])
                 pi.append(sample[j][1][0:int(2 * game_config.pick_piece_thrs)])
-                v.append(sample[j][1][int(2 * game_config.pick_piece_thrs)])
+                v.append(sample[j][1][-1])
                 turn.append(sample[j][2])
 
             x = []
@@ -212,6 +214,9 @@ class MyModel:
             # -------------- cmd command: python -m tensorboard.main --logdir=logs ------------------------
             # logdir="./logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
             # tensorboard_callback = keras.callbacks.TensorBoard(log_dir=logdir)
+
+            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
             self.model.fit(x=x, y={"pi_head": pi, "v_head": v}, epochs=self.config.epochs, verbose=1,
                            batch_size=batch_size)
             # callbacks=[tensorboard_callback])

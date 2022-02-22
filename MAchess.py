@@ -125,8 +125,9 @@ class ChessBoard(tk.Tk):
                 self.trace = {0: [self.state, None]}
                 self.restart = 0
 
-                print("New Game: step %d, turn: %d, result: %d, last move: %s status: %d"
-                      % (self.currentstep, self.turn, self.gameResult, [-1], self.status))
+                print(
+                    "New Game: step %d, turn: %d, result: %d, last move: %s status: %d\n--------------------------------------------"
+                    % (self.currentstep + 1, self.turn, self.gameResult, [-1], self.status))
             elif self.turn != self.gr.initialTurn:
                 self.status = 1
                 self.setBasedOnStatus()
@@ -350,7 +351,7 @@ class ChessBoard(tk.Tk):
 
     # -- engine part
     def engineApplyMove(self, body):
-        print('engine move %d : %s' % (self.currentstep, body))
+        print('step %d :  %s' % (self.currentstep, body))
         # set-up
         b = body
         self.select1 = [b[0], b[1]]

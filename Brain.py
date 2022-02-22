@@ -4,6 +4,7 @@
 # +++++++++++++++++++++++++++++++++++++++++++++++++++
 
 import copy
+import math
 import os
 import pickle
 from collections import deque
@@ -37,7 +38,7 @@ class BrainMemory:
             if t[2] == winner:  # winning move
                 t[1][-1] = reward
             else:  # losing move
-                t[1][-1] = -reward
+                t[1][-1] = 0
             self.usable_memory.append(t)
         self.tmp_memory = deque(maxlen=self.max_size)
 
@@ -48,8 +49,9 @@ class Brain:
         self.mct = MCTS(game_config.mct_simulate_num, MCTconfig())
         self.gr = GR()
         self.gcnt = Count()
-        self.epsilon = 0.2  # epsilon greedy
-        self.mem = BrainMemory(500, self.HOME_PATH)
+        self.epsilon = game_config.epsilon  # epsilon greedy
+        self.mem = BrainMemory(240, self.HOME_PATH)
+        self.game_count = 0
         # self.trained_label = 0
 
     def getAction(self, cmd):  # cmd.body==(board,turn)
@@ -61,7 +63,7 @@ class Brain:
 
         # cmd.counter += 1
 
-        if cmd.counter % 200 == 0:
+        if cmd.counter % 50 == 0:
             othercmd = cmd.body[3]
             # if othercmd[0] == 1:  # write model
             p = os.path.join(self.HOME_PATH, "lucas_model")
@@ -71,7 +73,7 @@ class Brain:
             #     self.mct.nn.loadModel(p)
             # return GameSignal(2, None)
         if cmd.counter % 5000 == 0:
-            p = os.path.join(self.HOME_PATH, f"lucas_model_5million_{min(cmd.counter, 5000000)}")
+            p = os.path.join(self.HOME_PATH, f"lucas_model_5_thousand_{min(cmd.counter, 5000000)}")
             self.mct.nn.writeModel(p)
 
         if len(winner) > 0:
@@ -94,7 +96,8 @@ class Brain:
 
         piv = []
         # epsilon greedy
-        if np.random.random() < self.epsilon:
+        self.game_count += 1
+        if np.random.random() < self.epsilon * 2 * (0.5 ** math.log(self.game_count, 800)):
             idx_maxN = np.random.randint(0, len(actn_list))
 
         # store intended move into game signal

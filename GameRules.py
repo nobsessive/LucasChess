@@ -216,6 +216,8 @@ class GR:
 
     # the following function
     # generates every legal move for a specific board with regard to mode
+    # actn mode: return a list of action numbers
+    # cood mode: return a list of coordinates
     def gmove(self, coord, board, mode):
         s = []
         x, y = coord
