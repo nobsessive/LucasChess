@@ -203,14 +203,23 @@ def optimal_strategy():
             dtw[i] = 0
             par[i] = -1
 
+    node_cnt = 1
     parent_turn = 1
     for current_distance in range(1, r * c + 1):
+        print(f"========================current distance {current_distance}===========================")
         current_turn = (parent_turn + 1) % 2
         for i in range(total_state_num):
+            if i % 10000 == 0:
+                print(f"---- inspected: {i}/{total_state_num} ------")
             if dtw[i] != current_distance - 1 or (i % 2 != parent_turn):
                 continue
             state_list = reverse_move(*num_to_state(i))
             for j in state_list:
+                # ======================================= display =======================================
+                if node_cnt % 10000 == 0:
+                    print(f"********************* overall expanded node number: {node_cnt} *********************")
+                    node_cnt += 1
+                # ======================================= display =======================================
                 idx = state_to_num(j, current_turn)
                 dtw[idx] = current_distance
                 par[idx] = i
@@ -222,6 +231,14 @@ def optimal_strategy():
 
 def display(state2d, turn):
     dtw, par = optimal_strategy()
+    # ======================================= display =======================================
+    f = open("NxNoptimal_dtw.txt", "w+")
+    f.write(str(dtw))
+    f.close()
+    g = open("NxNoptimal_par.txt", "w+")
+    g.write(str(par))
+    g.close()
+    # ======================================= display =======================================
     states = []
     root = copy.deepcopy(state2d)
     reverse_color_flag = par[state_to_num(root, turn)]
