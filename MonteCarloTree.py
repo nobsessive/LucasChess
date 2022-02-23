@@ -48,7 +48,15 @@ class MCTS():
         # self.nn.loadModel(p)
         #
         # print("Model Loaded Successfully")
-        # ==================================================================================
+        # # ==================================================================================
+        # def init_layer(layer):
+        #     session = K.get_session()
+        #     weights_initializer = tf.variables_initializer(layer.weights)
+        #     session.run(weights_initializer)
+        #
+        # layer_under_init = [ l for l in self.nn.model.layers if l.name == "v_head"]
+        # for i in range(len(layer_under_init)):
+        #     layer_under_init[i].set_weights([np.random.random(layer_under_init[i].get_weights()[0].shape), np.random.random(1)*2-1])
 
     def addRoot(self, state, turn):
         self.tree = {'Nodes': [],

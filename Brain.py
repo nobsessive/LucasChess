@@ -50,7 +50,7 @@ class Brain:
         self.gr = GR()
         self.gcnt = Count()
         self.epsilon = game_config.epsilon  # epsilon greedy
-        self.mem = BrainMemory(240, self.HOME_PATH)
+        self.mem = BrainMemory(game_config.memory_size, self.HOME_PATH)
         self.game_count = 0
         # self.trained_label = 0
 
@@ -97,8 +97,9 @@ class Brain:
         piv = []
         # epsilon greedy
         self.game_count += 1
-        if np.random.random() < self.epsilon * 2 * (0.5 ** math.log(self.game_count, 800)):
+        if np.random.random() < self.epsilon * 2 * (0.5 ** math.log(self.game_count, 100)):
             idx_maxN = np.random.randint(0, len(actn_list))
+            print("-----  This is an epsilon move ----")
 
         # store intended move into game signal
         move_n = actn_list[idx_maxN]

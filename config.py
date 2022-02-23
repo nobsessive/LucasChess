@@ -2,9 +2,13 @@ GameName = 'chess'
 
 GUI_ENABLE = True
 # -- path
-mct_simulate_num = 60
-epsilon = 0.3
-cpuct = 0.7  # mct cpuct
+mct_simulate_num = 20
+epsilon = 0.2
+cpuct = 0.1  # mct cpuct
+memory_size = 500
+batch_size = 50
+train_loop = 2
+epochs = 3
 
 # board_rows = 3
 # board_cols = 3

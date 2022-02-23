@@ -16,9 +16,9 @@ import config as game_config
 
 class ModelConfig:
     def __init__(self):
-        self.train_loop = 3
-        self.batch_size = 50
-        self.epochs = 3
+        self.train_loop = game_config.train_loop
+        self.batch_size = game_config.batch_size
+        self.epochs = game_config.epochs
 
 
 class MyModel:
@@ -150,7 +150,7 @@ class MyModel:
         pi_head = tf.keras.layers.Dense(self.output_shape1, activation='relu', name="pi_head")(x)
         v_head = tf.keras.layers.Dense(self.output_shape2, activation='softmax', name="v_head")(x)
         self.model = tf.keras.models.Model(inputs=x_input, outputs=[pi_head, v_head], name="ResNet_1_2")
-        opt = tf.keras.optimizers.SGD(learning_rate=0.01)
+        opt = tf.keras.optimizers.Adam(learning_rate=0.01)
         self.model.compile(
             loss={"pi_head": "categorical_crossentropy", "v_head": "mean_squared_error"},
             optimizer=opt,
@@ -158,8 +158,7 @@ class MyModel:
             run_eagerly=True  # enable tensor.numpy()
         )
         # self.model.compile(loss='categorical_crossentropy', optimizer="sgd", loss_weights={"pi_head": 1, "v_head": 1})
-        self.model.summary()
-        return
+        # self.model.summary()
 
     # return [array of stepn [array of 2[nparray of 576 , nparray of 1]]] x
     # return [nparray of stepn [nparray of 576 or nparray of 1]] 
@@ -216,6 +215,8 @@ class MyModel:
             # tensorboard_callback = keras.callbacks.TensorBoard(log_dir=logdir)
 
             print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+            predict_v = self.model.predict(x)[1]
+            print(f"predict v: {predict_v}\n actual v: {v}")
             print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
             self.model.fit(x=x, y={"pi_head": pi, "v_head": v}, epochs=self.config.epochs, verbose=1,
                            batch_size=batch_size)

@@ -2,10 +2,11 @@
 turn: 0: white, 1: black
 piece: -1: black, 0: space, 1: white, 2: obstacle
 """
-
+import copy
 import math
 
 import config
+from GameRules import GR
 
 
 def comb(n, k):
@@ -24,13 +25,19 @@ obstacles_combinations = 2 ** (r * c - 4)
 total_state_num = side_combinations * position_combinations * obstacles_combinations * 2
 piece_position_table = []
 side_position_table = []
+inv_piece_position_table = {}
+inv_side_position_table = {}
+
+gr = GR()  # game rule
 
 
 def make_position_table(t, comb_num, limit):
     k = list(range(t))
     position_table = []
+    inv_position_table = {}
     for i in range(comb_num):
         position_table.append(k.copy())
+        inv_position_table.update({frozenset(k.copy()): i})
         for j in range(t - 1, -1, -1):
             if k[j] < limit - (t - j):
                 k[j] += 1
@@ -44,9 +51,10 @@ def make_position_table(t, comb_num, limit):
                         k[h] = k[h - 1] + 1
                     break
     # print(position_table, len(position_table))
-    return position_table
+    return position_table, inv_position_table
 
 
+# return 1d state with respect to state number
 def num_to_state(n):
     state = [0] * r * c
 
@@ -76,20 +84,176 @@ def num_to_state(n):
     return state, turn
 
 
-def state_to_num(state, turn):
-    pass
+def state_to_num(state, turn, state_dim=2):
+    if state_dim == 2:
+        state = [i for j in state for i in j]  # flatten
+
+    num = turn
+
+    position = []
+    for i in range(r * c):
+        if state[i] in [-1, 1]:
+            position.append(i)
+    position_num = inv_piece_position_table[frozenset(position)]
+    num += position_num * 2
+
+    side = []
+    tmp = 0
+    for i in range(r * c):
+        if state[i] == 1:  # from the perspective of white
+            side.append(tmp)
+        if state[i] in [-1, 1]:
+            tmp += 1
+    side_num = inv_side_position_table[frozenset(side)]
+    num += side_num * 2 * position_combinations
+
+    obstacle_num = 0
+    tmp = 1
+    for i in range(r * c):
+        if state[i] == 2:
+            obstacle_num += tmp
+        if state[i] not in [-1, 1]:
+            tmp *= 2
+    num += obstacle_num * 2 * position_combinations * side_combinations
+
+    return num
 
 
+# return a list of state2d consisting reversed states of state
 def reverse_move(state, turn):
+    def remove_target_piece_and_obstacle(state2d, i, j):
+        ret = []
+        dx = dy = [-1, 0, 1]
+        for p in dx:
+            for q in dy:
+                x, y = p + i, q + j
+                if x < 0 or x >= r or y < 0 or y >= c:
+                    continue
+                if state2d[x][y] == 2:
+                    cpst = copy.deepcopy(state2d)
+                    cpst[x][y], cpst[i][j] = 0, 0
+                    ret.append(cpst)
+        return ret
+
+    def move_piece_back(state2d_list, i, j, target_side):
+        destination = []  # coordinates of destination where we can put the piece back
+        dx = [-1, -1, 0, 1, 1, 1, 0, -1]  # north, northeast, east, ... , northwest
+        dy = [0, 1, 1, 1, 0, -1, -1, -1]
+        # iterate through row, column, and diagonals
+        for state2d in state2d_list:
+            for k in range(len(dx)):
+                x, y = i, j
+                while True:
+                    x += dx[k]
+                    y += dy[k]
+                    if x < 0 or x >= r or y < 0 or y >= c:
+                        break
+                    if state2d[x][y] == 0:
+                        cpst = copy.deepcopy(state2d)
+                        cpst[x][y] = target_side
+                        destination.append(cpst)
+                    else:
+                        break
+        return destination
+
+    # ---------------------- sub-functions end -----------------------
     target_side = -1 if turn == 0 else 1
     state2d = [state[j * r:j * r + c] for j in range(r)]
     out = []
-    return state2d
+    for i in range(r):
+        for j in range(c):
+            if state2d[i][j] == target_side:
+                tmp_out = remove_target_piece_and_obstacle(state2d, i, j)
+                out += move_piece_back(tmp_out, i, j, target_side)
+    return out
+
+
+def unit_test():
+    # ------------------------------- test reverse_move ----------------------------------------
+    state, turn = num_to_state(3000)
+    print(f"state : {state}, turn: {turn}\n******************")
+    ret = reverse_move(state, turn)
+    for i in ret:
+        for j in range(r):
+            print(i[j])
+        print("-------------------")
+
+    # ------------------------------- test state_to_num ----------------------------------------
+    test_state = [
+        [2, -1, 0],
+        [-1, 2, 2],
+        [0, 1, 1]
+    ]
+    stn = state_to_num(test_state, 0)
+    print(stn)
+    print(num_to_state(stn))
+
+
+def optimal_strategy():
+    # distance to win, 0 is leaf node
+    dtw = [-1] * total_state_num
+    # store the number of parent node, leaf nodes have no parents since the tree grows to the bottom
+    # -2 means un-initialized, -1 means leaf node
+    par = [-2] * total_state_num
+
+    for i in range(1, total_state_num, 2):  # find all black's lose state
+        s, t = num_to_state(i)
+        s = [s[j * r:j * r + c] for j in range(r)]
+        if gr.judge(s, t) != 0:
+            dtw[i] = 0
+            par[i] = -1
+
+    parent_turn = 1
+    for current_distance in range(1, r * c + 1):
+        current_turn = (parent_turn + 1) % 2
+        for i in range(total_state_num):
+            if dtw[i] != current_distance - 1 or (i % 2 != parent_turn):
+                continue
+            state_list = reverse_move(*num_to_state(i))
+            for j in state_list:
+                idx = state_to_num(j, current_turn)
+                dtw[idx] = current_distance
+                par[idx] = i
+        parent_turn = (parent_turn + 1) % 2
+    # ----------- got all win states for white ----------------
+
+    return dtw, par
+
+
+def display(state2d, turn):
+    dtw, par = optimal_strategy()
+    states = []
+    root = copy.deepcopy(state2d)
+    reverse_color_flag = par[state_to_num(root, turn)]
+    if reverse_color_flag == -2:  # un-initialized parent, so black win in optimal play
+        for i in range(r):
+            for j in range(c):
+                if root[i][j] in [-1, 1]:
+                    root[i][j] = - root[i][j]
+
+    while True:
+        sid = state_to_num(root, turn)
+        sid = par[sid]
+        root, turn = num_to_state(sid)
+        root = [root[j * r:j * r + c] for j in range(r)]
+        states.append(root)
+        i = dtw[sid]
+        if i == 0:
+            break
+    for i in states:
+        for j in range(r):
+            if reverse_color_flag == -2:  # we need to reverse color
+                p = []
+                for k in i[j]:
+                    p.append(-k if k in [-1, 1] else k)
+                print(p)
+            else:
+                print(i[j])
+        print("-------------------")
 
 
 if __name__ == '__main__':
-    print(side_combinations, position_combinations, obstacles_combinations, total_state_num)
-    piece_position_table = make_position_table(4, position_combinations, r * c)
-    side_position_table = make_position_table(2, side_combinations, 4)
-
-    print(reverse_move(*num_to_state(total_state_num - 1)))
+    # print(side_combinations, position_combinations, obstacles_combinations, total_state_num)
+    piece_position_table, inv_piece_position_table = make_position_table(4, position_combinations, r * c)
+    side_position_table, inv_side_position_table = make_position_table(2, side_combinations, 4)
+    display(config.init_chess_state, 0)
