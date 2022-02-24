@@ -196,14 +196,21 @@ def optimal_strategy():
     # -2 means un-initialized, -1 means leaf node
     par = [-2] * total_state_num
 
+    node_cnt = 1
     for i in range(1, total_state_num, 2):  # find all black's lose state
+        # ======================================= display =======================================
+        if node_cnt % 10000 == 0:
+            print(
+                f"********** overall expanded node number: {node_cnt} (state number: {total_state_num}) **************")
+        node_cnt += 1
+        # ======================================= display =======================================
         s, t = num_to_state(i)
         s = [s[j * r:j * r + c] for j in range(r)]
         if gr.judge(s, t) != 0:
             dtw[i] = 0
             par[i] = -1
 
-    node_cnt = 1
+
     parent_turn = 1
     for current_distance in range(1, r * c + 1):
         print(f"========================current distance {current_distance}===========================")
@@ -217,12 +224,14 @@ def optimal_strategy():
             for j in state_list:
                 # ======================================= display =======================================
                 if node_cnt % 10000 == 0:
-                    print(f"********************* overall expanded node number: {node_cnt} *********************")
-                    node_cnt += 1
+                    print(
+                        f"**** overall expanded node number: {node_cnt}, distance: {current_distance}, (state number: {total_state_num}) ****")
+                node_cnt += 1
                 # ======================================= display =======================================
                 idx = state_to_num(j, current_turn)
-                dtw[idx] = current_distance
-                par[idx] = i
+                if dtw[idx] == -1:
+                    dtw[idx] = current_distance
+                    par[idx] = i
         parent_turn = (parent_turn + 1) % 2
     # ----------- got all win states for white ----------------
 

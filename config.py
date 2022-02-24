@@ -12,11 +12,11 @@ epochs = 3
 
 # board_rows = 3
 # board_cols = 3
-init_chess_state = [
-    [0, -1, 0],
-    [-1, 0, 1],
-    [0, 1, 0]
-]
+# init_chess_state = [
+#     [0, -1, 0],
+#     [-1, 0, 1],
+#     [0, 1, 0]
+# ]
 # question_state = [
 #     [0, -1, 0],
 #     [2, 1, 2],
@@ -24,12 +24,12 @@ init_chess_state = [
 # ]
 
 
-# init_chess_state = [
-#     [0, -1, 0, 0],
-#     [-1, 0, 0, 0],
-#     [0, 0, 0, 1],
-#     [0, 0, 1, 0]
-# ]
+init_chess_state = [
+    [0, -1, 0, 0],
+    [-1, 0, 0, 0],
+    [0, 0, 0, 1],
+    [0, 0, 1, 0]
+]
 
 
 # board_rows=6
