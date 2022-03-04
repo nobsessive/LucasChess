@@ -65,8 +65,8 @@ class GR:
     def takeAction(self, b, actn, turn):
         board = copy.deepcopy(b)
         a = self.actn2move(actn, board, turn)
+        board[a[2]][a[3]] = board[a[0]][a[1]]
         board[a[0]][a[1]] = 0
-        board[a[2]][a[3]] = turn
         board[a[4]][a[5]] = 2
         return board
 
