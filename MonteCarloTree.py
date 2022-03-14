@@ -1,9 +1,9 @@
 # Copyright (c) [2020] [P.H.]
 import copy
-import os
 
 import numpy as np
 
+import config as game_config
 from GameRules import GR
 from kerasModel import ModelConfig
 from kerasModel import MyModel
@@ -14,7 +14,7 @@ class MCTconfig:
         self.inf = 99999
         self.L = 36  # max simulation length
         self.maxPossibleReward = 1
-        self.cpuct = 0.1
+        self.cpuct = game_config.cpuct
 
 
 class Node:
@@ -44,11 +44,19 @@ class MCTS():
         self.nn = MyModel(ModelConfig())
         # =================================================================================
         #  Load Model Here
-        p = os.path.join(os.getcwd(), "lucas_model")
-        self.nn.loadModel(p)
-
-        print("Model Loaded Successfully")
-        # ==================================================================================
+        # p = os.path.join(os.getcwd(), "lucas_model")
+        # self.nn.loadModel(p)
+        #
+        # print("Model Loaded Successfully")
+        # # ==================================================================================
+        # def init_layer(layer):
+        #     session = K.get_session()
+        #     weights_initializer = tf.variables_initializer(layer.weights)
+        #     session.run(weights_initializer)
+        #
+        # layer_under_init = [ l for l in self.nn.model.layers if l.name == "v_head"]
+        # for i in range(len(layer_under_init)):
+        #     layer_under_init[i].set_weights([np.random.random(layer_under_init[i].get_weights()[0].shape), np.random.random(1)*2-1])
 
     def addRoot(self, state, turn):
         self.tree = {'Nodes': [],
@@ -67,10 +75,9 @@ class MCTS():
         a = self.gr.getAllowedMoves(copy.deepcopy(rn.state), turn, 'actn')
         if len(a) == 0:
             self.tree['Edges'].append([])
-            v = -self.config.maxPossibleReward
         else:
-
             actionValue, v = self.nn.evaluate(copy.deepcopy(rn.state), rn.turn)
+            actionValue = actionValue / np.sqrt(np.sum(actionValue ** 2))
             p = []
             for actn in a:
                 e = Edge(parentIndex=0, actn=actn)
@@ -85,12 +92,13 @@ class MCTS():
 
         # backfill
         if len(path) > 0:
-            leafplayer = turn
+            v = self.config.maxPossibleReward
+            _, Q = self.nn.evaluate(state, turn)
             for edge in path:
                 if edge.turn == turn:
-                    edge.W += v
+                    edge.W += max(0, Q * v)
                 else:
-                    edge.W += -v
+                    edge.W += max(0, (1 - Q) * v)
                 edge.N += 1
                 edge.Q = edge.W / edge.N
 
@@ -129,13 +137,11 @@ class MCTS():
             # -- add new State to tree
             if len(self.tree['Edges'][cix]) == 0:  # end game
                 turn = self.tree['Nodes'][cix].turn
-                v = -self.config.maxPossibleReward
+                v = self.config.maxPossibleReward
                 if len(path) > 0:
                     for edge in path:
-                        if edge.turn == turn:
+                        if edge.turn != turn:  # opponent wins
                             edge.W += v
-                        else:
-                            edge.W += -v
                         edge.N += 1
                         edge.Q = edge.W / edge.N
             else:  # unexpanded node
@@ -155,6 +161,18 @@ class MCTS():
             sumn += e.N
         for e in self.tree['Edges'][0]:
             pi.append([e.actn, 1.0 * e.N / sumn])
+
+        # =================display================
+        print_pi = np.array(pi)
+        localn_list = print_pi[:, 1]
+        idx_maxN = np.argwhere(localn_list == max(localn_list))  # could be an array
+        if (type(idx_maxN) != type(int)):
+            idx_maxN = idx_maxN[0][0]  # the returned array's data is stored at array[i][0]
+        selected_edge = self.tree['Edges'][0][int(idx_maxN)]
+        print(
+            f"mct value for current state (Q): {selected_edge.Q}, P: {selected_edge.P}, N: {selected_edge.N}, W: {selected_edge.W}")
+        # =================display================
+
         return pi
 
 

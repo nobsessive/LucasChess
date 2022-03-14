@@ -10,6 +10,7 @@ import tkinter as tk
 
 from PIL import Image, ImageTk
 
+import config
 from GameRules import GR
 from count import Count
 
@@ -45,18 +46,11 @@ class ChessBoard(tk.Tk):
         self.currentstep = 0
         self.bplayer = int(HumanPlayBlack)  # human 1, ai 0
         self.wplayer = int(HumanPlayWhite)
-        self.cols = 6
-        self.rows = 6
+        self.cols = config.board_cols
+        self.rows = config.board_rows
         self.img_backup = {}
         self.pieces = {}
-        self.state = [
-            [0, 0, 0, -1, 0, 0],
-            [0, 0, 0, 0, 0, 0],
-            [-1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 1],
-            [0, 0, 0, 0, 0, 0],
-            [0, 0, 1, 0, 0, 0]
-        ]
+        self.state = copy.deepcopy(config.init_chess_state)
 
         # -- ui
         # super(ChessBoard, self).__init__()
@@ -131,8 +125,9 @@ class ChessBoard(tk.Tk):
                 self.trace = {0: [self.state, None]}
                 self.restart = 0
 
-                print("New Game: step %d, turn: %d, result: %d, last move: %s status: %d"
-                      % (self.currentstep, self.turn, self.gameResult, [-1], self.status))
+                print(
+                    "New Game: step %d, turn: %d, result: %d, last move: %s status: %d\n--------------------------------------------"
+                    % (self.currentstep + 1, self.turn, self.gameResult, [-1], self.status))
             elif self.turn != self.gr.initialTurn:
                 self.status = 1
                 self.setBasedOnStatus()
@@ -346,7 +341,7 @@ class ChessBoard(tk.Tk):
         # move2 to move3
         dr = self.select3[0] - self.select2[0]
         dc = self.select3[1] - self.select2[1]
-        if abs(dr) > 1 or abs(dc) > 1:
+        if (abs(dr) > 1 or abs(dc) > 1) or (dr == 0 and dc == 0):
             return False
 
         return True
@@ -356,7 +351,7 @@ class ChessBoard(tk.Tk):
 
     # -- engine part
     def engineApplyMove(self, body):
-        print('engine move %d : %s' % (self.currentstep, body))
+        print('step %d :  %s' % (self.currentstep, body))
         # set-up
         b = body
         self.select1 = [b[0], b[1]]
