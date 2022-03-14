@@ -103,13 +103,13 @@ class Brain:
         # move_n = actn_list[idx_maxN]
         # move_n = int(move_n + 0.5)
 
-        if turn == -1:
-            for ii, row in enumerate(state):
-                for jj, nn in enumerate(row):
-                    if nn in [-1, 1]:
-                        state[ii][jj] *= -1
+        # if turn == -1:
+        #     for ii, row in enumerate(state):
+        #         for jj, nn in enumerate(row):
+        #             if nn in [-1, 1]:
+        #                 state[ii][jj] *= -1
 
-        state_num = NxNoptimal.state_to_num(state, 0)
+        state_num = NxNoptimal.state_to_num(state, 1 if turn == -1 else 0)
         best_move = NxNoptimal.num_to_state(NxNoptimal.par[state_num])[0]
         best_move2d = [best_move[j * game_config.board_rows:j * game_config.board_rows + game_config.board_cols] for j
                        in

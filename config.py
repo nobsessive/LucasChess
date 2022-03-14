@@ -10,11 +10,11 @@ batch_size = 50
 train_loop = 2
 epochs = 3
 
-init_chess_state = [
-    [0, -1, 0],
-    [-1, 0, 1],
-    [0, 1, 0]
-]
+# init_chess_state = [
+#     [0, -1, 0],
+#     [-1, 0, 1],
+#     [0, 1, 0]
+# ]
 
 # question_state = [
 #     [0, -1, 0],
@@ -22,6 +22,11 @@ init_chess_state = [
 #     [-1, 1, 0]
 # ]
 
+init_chess_state = [
+    [0, -1, 0, 0],
+    [-1, 0, 0, 1],
+    [0, 0, 1, 0]
+]
 
 # init_chess_state = [
 #     [0, -1, 0, 0],

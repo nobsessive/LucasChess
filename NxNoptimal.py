@@ -121,10 +121,10 @@ def state_to_num(state, turn, state_dim=2):
 
 # get allowed move for a given state, return a list of states
 def get_moved_states(state, turn):
-    state2d = [state[j * r:j * r + c] for j in range(r)]
+    state2d = [state[j * c:j * c + c] for j in range(r)]
 
     def gen_moves(state2duc, x, y):
-        state2d = state2duc.copy()
+        state2d = copy.deepcopy(state2duc)
         destination = []  # coordinates of destination where we can put the piece back
         dx = [-1, -1, 0, 1, 1, 1, 0, -1]  # north, northeast, east, ... , northwest
         dy = [0, 1, 1, 1, 0, -1, -1, -1]
@@ -142,8 +142,8 @@ def get_moved_states(state, turn):
         def look_around(x, y):  # look around to see which squares can we put blocks
             ret = []
             for i in range(len(dx)):
-                if judge_oor_or_ne(x + dx, y + dy) == 0:
-                    ret.append([x + dx, y + dy])
+                if judge_oor_or_ne(x + dx[i], y + dy[i]) == 0:
+                    ret.append([x + dx[i], y + dy[i]])
             return ret
 
         for i in range(len(dx)):
@@ -154,19 +154,21 @@ def get_moved_states(state, turn):
                     block_able_list = look_around(cx, cy)
                     if block_able_list:
                         for bal in block_able_list:
-                            st = state2d.copy()
+                            st = copy.deepcopy(state2d)
                             st[cx][cy] = piece_color
                             st[bal[0]][bal[1]] = 2
                             destination.append(st)
                 else:
                     break
+            i += 1
         return destination
 
     state_list = []
     m, n = len(state2d), len(state2d[0])
     for i in range(m):
         for j in range(n):
-            if state2d[i][j] == turn:
+            piece = 1 if turn == 0 else -1
+            if state2d[i][j] == piece:
                 state_list += gen_moves(state2d.copy(), i, j)
     return state_list
 
@@ -210,7 +212,7 @@ def reverse_move(state, turn):
 
     # ---------------------- sub-functions end -----------------------
     target_side = -1 if turn == 0 else 1
-    state2d = [state[j * r:j * r + c] for j in range(r)]
+    state2d = [state[j * c:j * c + c] for j in range(r)]
     out = []
     for i in range(r):
         for j in range(c):
@@ -257,31 +259,28 @@ def optimal_strategy():
         node_cnt += 1
         # ======================================= display =======================================
         s, t = num_to_state(i)
-        s = [s[j * r:j * r + c] for j in range(r)]
-        if gr.judge(s, t) != 0:
+        if len(get_moved_states(s, t)) == 0:
             dtw[i] = 0
             par[i] = -1
 
-    parent_turn = 1
-    for current_distance in range(1, r * c + 1):
+    for current_distance in range(0, r * c - 4):
         print(f"========================current distance {current_distance}===========================")
-        current_turn = (parent_turn + 1) % 2
         for i in range(total_state_num):
             if i % 10000 == 0:
                 print(f"---- inspected: {i}/{total_state_num} ------")
-
-            if current_turn == 0:  # current turn is white
-                if i % 2 != parent_turn:
-                    continue
-                if dtw[i] != current_distance - 1:
+            if i % 2 != 1:
+                continue
+            if current_distance % 2 == 0:  # dis0, color white turn
+                if dtw[i] != current_distance:
                     continue
                 state_list = reverse_move(*num_to_state(i))
-            else:  # current turn is black
+            else:  # dis1, color black turn
                 if dtw[i] != -1:
                     continue
-                state_list = get_moved_states(*num_to_state(i))
+                tmp_st, _ = num_to_state(i)
+                state_list = get_moved_states(tmp_st, 1)
 
-            if current_turn == 0:  # white
+            if current_distance % 2 == 0:  # dis0, color white turn
                 for j in state_list:
                     # ======================================= display =======================================
                     if node_cnt % 10000 == 0:
@@ -289,13 +288,14 @@ def optimal_strategy():
                             f"**** overall expanded node number: {node_cnt}, distance: {current_distance}, (state number: {total_state_num}) ****")
                     node_cnt += 1
                     # ======================================= display =======================================
-                    idx = state_to_num(j, current_turn)
+                    idx = state_to_num(j, 0)
                     if dtw[idx] == -1:
-                        dtw[idx] = current_distance
+                        dtw[idx] = current_distance + 1
                         par[idx] = i
-            else:  # black
-                better_option_for_black = -1
-                black_best_state_num = -1
+
+            else:  # dis1, color black turn
+                best_option_for_black = -2
+                best_state_num = -1
                 for j in state_list:
                     # ======================================= display =======================================
                     if node_cnt % 10000 == 0:
@@ -306,16 +306,15 @@ def optimal_strategy():
                     state_num_of_j = state_to_num(j, 0)  # evaluate the state of white's turn
                     # if there is any option for black that is un-initilized, then this node has dtw more than current depth
                     if dtw[state_num_of_j] == -1:
-                        better_option_for_black = -1
+                        best_option_for_black = -2
                         break
                     # otherwise
-                    if dtw[state_num_of_j] > better_option_for_black:
-                        better_option_for_black = dtw[state_num_of_j]
-                        black_best_state_num = state_num_of_j
-                if better_option_for_black == -1:
-                    dtw[i] = current_distance
-                    par[i] = black_best_state_num
-        parent_turn = (parent_turn + 1) % 2
+                    if dtw[state_num_of_j] > best_option_for_black:
+                        best_option_for_black = dtw[state_num_of_j]
+                        best_state_num = state_num_of_j
+                if best_option_for_black != -2:
+                    dtw[i] = best_option_for_black + 1
+                    par[i] = best_state_num
     # ----------- got all win states for white ----------------
     return dtw, par
 
@@ -341,13 +340,13 @@ def display(state2d, turn):
 
     while True:
         sid = state_to_num(root, turn)
-        sid = par[sid]
-        root, turn = num_to_state(sid)
-        root = [root[j * r:j * r + c] for j in range(r)]
-        states.append(root)
-        i = dtw[sid]
-        if i == 0:
+        par_id = par[sid]
+        if par_id < 0:
             break
+        root, turn = num_to_state(par_id)
+        root = [root[j * c:j * c + c] for j in range(r)]
+        states.append(root)
+
     for i in states:
         for j in range(r):
             if reverse_color_flag == -2:  # we need to reverse color
@@ -360,10 +359,44 @@ def display(state2d, turn):
         print("-------------------")
 
 
+def write_to_disk(dtw, par, file_name='NxNoptimal'):
+    f = open(file_name + f"dtw_r{r}_c{c}.txt", 'w+')
+    f.write(str(dtw)[1:-1])
+    f.close()
+    f = open(file_name + f"par_r{r}_c{c}.txt", 'w+')
+    f.write(str(par)[1:-1])
+    f.close()
+
+
+def load_from_disk(file_name='NxNoptimal'):
+    f = open(file_name + f"dtw_r{r}_c{c}.txt", 'r')
+    dtw = list(map(int, f.read().split(',')))
+    f.close()
+    f = open(file_name + f"par_r{r}_c{c}.txt", 'r')
+    par = list(map(int, f.read().split(',')))
+    f.close()
+    return dtw, par
+
+
 # if __name__ == '__main__':
 # print(side_combinations, position_combinations, obstacles_combinations, total_state_num)
 
 piece_position_table, inv_piece_position_table = make_position_table(4, position_combinations, r * c)
 side_position_table, inv_side_position_table = make_position_table(2, side_combinations, 4)
+
+
 # display(config.init_chess_state, 0)
-dtw, par = optimal_strategy()
+
+# dtw, par = optimal_strategy()
+
+def d2(num):
+    state, _ = num_to_state(num)
+    state2d = [state[j * c:j * c + c] for j in range(r)]
+    for j in state2d:
+        print(j)
+    print(state2d)
+
+
+# write_to_disk(*optimal_strategy())
+dtw, par = load_from_disk()
+print(dtw[:50], par[:50])
