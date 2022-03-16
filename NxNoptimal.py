@@ -254,78 +254,97 @@ def optimal_strategy():
     # -2 means un-initialized, -1 means leaf node
     par = [-2] * total_state_num
 
-    node_cnt = 1
-    for i in range(1, total_state_num, 2):  # find all black's lose state
-        # ======================================= display =======================================
-        if node_cnt % 10000 == 0:
-            print(
-                f"********** overall expanded node number: {node_cnt} (state number: {total_state_num}) **************")
-        node_cnt += 1
-        # ======================================= display =======================================
-        s, t = num_to_state(i)
-        dbg_switch = 0 if node_cnt < 490000 or node_cnt > 510000 else node_cnt
-        if len(get_moved_states(s, t, dbg_switch)) == 0:
-            dtw[i] = 0
-            par[i] = -1
+    bexp = []  # expanded when assuming black to win
 
-    for current_distance in range(0, r * c - 4):
-        print(f"========================current distance {current_distance}===========================")
-        for i in range(total_state_num):
-            if i % 10000 == 0:
-                print(f"---- inspected: {i}/{total_state_num} ------")
-            if i % 2 != 1:
+    def side_search(winside, node_cnt, dtw, par):
+        opside = (winside + 1) % 2  # assume opponent's side is decided to lose
+        for i in range(0, total_state_num):  # find all black's lose state
+            # ======================================= display =======================================
+            if node_cnt % 10000 == 0:
+                print(
+                    f"********** winside {winside}, overall expanded node number: {node_cnt} (state number: {total_state_num}) **************")
+            node_cnt += 1
+            # ======================================= display =======================================
+            if dtw[i] != -1 or (i % 2) != opside:
                 continue
-            if current_distance % 2 == 0:  # dis0, color white turn
-                if dtw[i] != current_distance:
-                    continue
-                state_list = reverse_move(*num_to_state(i))
-            else:  # dis1, color black turn
-                if dtw[i] != -1:
-                    continue
-                tmp_st, _ = num_to_state(i)
-                state_list = get_moved_states(tmp_st, 1)
+            s, t = num_to_state(i)
+            if len(get_moved_states(s, t)) == 0:
+                dtw[i] = 0
+                par[i] = -1
+                if winside == 1:
+                    bexp.append(i)
 
-            if current_distance % 2 == 0:  # dis0, color white turn
-                for j in state_list:
-                    # ======================================= display =======================================
-                    if node_cnt % 10000 == 0:
-                        print(
-                            f"**** overall expanded node number: {node_cnt}, distance: {current_distance}, (state number: {total_state_num}) ****")
-                    node_cnt += 1
-                    # ======================================= display =======================================
-                    idx = state_to_num(j, 0)
-                    if dtw[idx] == -1:
-                        dtw[idx] = current_distance + 1
-                        par[idx] = i
+        for current_distance in range(0, r * c - winside - 4):
+            print(f"========================current distance {current_distance}===========================")
+            for i in range(total_state_num):
+                if i % 10000 == 0:
+                    print(f"---- inspected: {i}/{total_state_num} ------")
+                if i % 2 != opside:
+                    continue
+                if current_distance % 2 == 0:  # dis0, color winside turn
+                    if dtw[i] != current_distance:
+                        continue
+                    state_list = reverse_move(*num_to_state(i))
+                else:  # dis1, color opside turn
+                    if dtw[i] != -1:
+                        continue
+                    tmp_st, _ = num_to_state(i)
+                    state_list = get_moved_states(tmp_st, opside)
 
-            else:  # dis1, color black turn
-                best_option_for_black = -2
-                best_state_num = -1
-                for j in state_list:
-                    # ======================================= display =======================================
-                    if node_cnt % 10000 == 0:
-                        print(
-                            f"**** overall expanded node number: {node_cnt}, distance: {current_distance}, (state number: {total_state_num}) ****")
-                    node_cnt += 1
-                    # ======================================= display =======================================
-                    state_num_of_j = state_to_num(j, 0)  # evaluate the state of white's turn
-                    # if there is any option for black that is un-initilized, then this node has dtw more than current depth
-                    if dtw[state_num_of_j] == -1:
-                        best_option_for_black = -2
-                        break
-                    # otherwise
-                    if dtw[state_num_of_j] > best_option_for_black:
-                        best_option_for_black = dtw[state_num_of_j]
-                        best_state_num = state_num_of_j
-                if best_option_for_black != -2:
-                    dtw[i] = best_option_for_black + 1
-                    par[i] = best_state_num
-    # ----------- got all win states for white ----------------
+                if current_distance % 2 == 0:  # dis0, color winside turn
+                    for j in state_list:
+                        # ======================================= display =======================================
+                        if node_cnt % 10000 == 0:
+                            print(
+                                f"**** winside {winside}, overall expanded node number: {node_cnt}, distance: {current_distance}, (state number: {total_state_num}) ****")
+                        node_cnt += 1
+                        # ======================================= display =======================================
+                        idx = state_to_num(j, winside)
+                        if dtw[idx] == -1:
+                            dtw[idx] = current_distance + 1
+                            par[idx] = i
+                            if winside == 1:
+                                bexp.append(idx)
+
+                else:  # dis1, color opside turn
+                    best_option_for_black = -2
+                    best_state_num = -1
+                    for j in state_list:
+                        # ======================================= display =======================================
+                        if node_cnt % 10000 == 0:
+                            print(
+                                f"**** winside {winside}, overall expanded node number: {node_cnt}, distance: {current_distance}, (state number: {total_state_num}) ****")
+                        node_cnt += 1
+                        # ======================================= display =======================================
+                        state_num_of_j = state_to_num(j, winside)  # evaluate the state of white's turn
+                        # if there is any option for black that is un-initilized, then this node has dtw more than current depth
+                        if dtw[state_num_of_j] == -1:
+                            best_option_for_black = -2
+                            break
+                        # otherwise
+                        if dtw[state_num_of_j] > best_option_for_black:
+                            best_option_for_black = dtw[state_num_of_j]
+                            best_state_num = state_num_of_j
+                    if best_option_for_black != -2:
+                        dtw[i] = best_option_for_black + 1
+                        par[i] = best_state_num
+                        if winside == 1:
+                            bexp.append(i)
+        return node_cnt, dtw, par
+
+    node_cnt, dtw, par = side_search(0, 1, dtw, par)
+    _, dtw, par = side_search(1, node_cnt, dtw, par)
+    for i in range(len(dtw)):
+        if dtw[i] == -1:  # draw or illegal state
+            dtw[i] = 999
+    for i in bexp:
+        dtw[i] = -dtw[i]
     return dtw, par
 
 
-def display(state2d, turn):
-    dtw, par = optimal_strategy()
+def display(state2d, turn, dtw=None, par=None):
+    if dtw is None or par is None:
+        dtw, par = optimal_strategy()
     # ======================================= display =======================================
     f = open("NxNoptimal_dtw.txt", "w+")
     f.write(str(dtw))
@@ -364,7 +383,7 @@ def display(state2d, turn):
         print("-------------------")
 
 
-def write_to_disk(dtw, par, file_name='NxNoptimal'):
+def write_to_disk(dtw, par, file_name='NxNoptimal_bothsides_'):
     f = open(file_name + f"dtw_r{r}_c{c}.txt", 'w+')
     f.write(str(dtw)[1:-1])
     f.close()
@@ -373,7 +392,7 @@ def write_to_disk(dtw, par, file_name='NxNoptimal'):
     f.close()
 
 
-def load_from_disk(file_name='NxNoptimal'):
+def load_from_disk(file_name='NxNoptimal_bothsides_'):
     f = open(file_name + f"dtw_r{r}_c{c}.txt", 'r')
     dtw = list(map(int, f.read().split(',')))
     f.close()
@@ -383,6 +402,37 @@ def load_from_disk(file_name='NxNoptimal'):
     return dtw, par
 
 
+def question(question_state2d):
+    b, m, n = 0, len(question_state2d), len(question_state2d[0])
+    for i in range(m):
+        for j in range(n):
+            if question_state2d[i][j] == 2:
+                b += 1
+
+    turn = b % 2
+    states = []
+    dbg = 0
+    root = question_state2d.copy()
+    while True:
+        sid = state_to_num(root, turn)
+        par_id = par[sid]
+        if par_id < 0:
+            break
+        root, turn = num_to_state(par_id)
+        root = [root[j * c:j * c + c] for j in range(r)]
+        states.append(root)
+        dbg += 1
+        if dbg > r * c - 3:
+            print("dbg incurred")
+            break
+    qn = state_to_num(question_state2d, b % 2)
+    print(f"dtw{dtw[qn]}, par{par[qn]} @ qn{qn}")
+    for i in states:
+        for j in range(r):
+            print(i[j])
+        print("-------------------")
+
+
 # if __name__ == '__main__':
 # print(side_combinations, position_combinations, obstacles_combinations, total_state_num)
 
@@ -390,7 +440,7 @@ piece_position_table, inv_piece_position_table = make_position_table(4, position
 side_position_table, inv_side_position_table = make_position_table(2, side_combinations, 4)
 
 
-# display(config.init_chess_state, 0)
+
 
 # dtw, par = optimal_strategy()
 
@@ -402,6 +452,7 @@ def d2(num):
     print(state2d)
 
 
-write_to_disk(*optimal_strategy())
+# write_to_disk(*optimal_strategy())
 dtw, par = load_from_disk()
-print(dtw[:50], par[:50])
+# display(config.init_chess_state, 0, dtw, par)
+question(config.question_state)
