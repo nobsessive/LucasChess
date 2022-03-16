@@ -120,10 +120,10 @@ def state_to_num(state, turn, state_dim=2):
 
 
 # get allowed move for a given state, return a list of states
-def get_moved_states(state, turn):
+def get_moved_states(state, turn, dbg_switch=0):
     state2d = [state[j * c:j * c + c] for j in range(r)]
 
-    def gen_moves(state2duc, x, y):
+    def gen_moves(state2duc, x, y, dbg_switch=0):
         state2d = copy.deepcopy(state2duc)
         destination = []  # coordinates of destination where we can put the piece back
         dx = [-1, -1, 0, 1, 1, 1, 0, -1]  # north, northeast, east, ... , northwest
@@ -151,9 +151,13 @@ def get_moved_states(state, turn):
             while judge_oor_or_ne(cx + dx[i], cy + dy[i]) == 0:
                 cx, cy = cx + dx[i], cy + dy[i]
                 if state2d[cx][cy] == 0:
+                    if dbg_switch != 0:
+                        print(f"{dbg_switch},{i},({cx},{cy})@if state2d[cx][cy] == 0: state_2d:{state2d}")
                     block_able_list = look_around(cx, cy)
                     if block_able_list:
                         for bal in block_able_list:
+                            if dbg_switch != 0:
+                                print(f"{dbg_switch},{i},({cx},{cy})@if dbg_switch != 0: == 0: state_2d:{state2d}")
                             st = copy.deepcopy(state2d)
                             st[cx][cy] = piece_color
                             st[bal[0]][bal[1]] = 2
@@ -169,7 +173,7 @@ def get_moved_states(state, turn):
         for j in range(n):
             piece = 1 if turn == 0 else -1
             if state2d[i][j] == piece:
-                state_list += gen_moves(state2d.copy(), i, j)
+                state_list += gen_moves(state2d.copy(), i, j, dbg_switch)
     return state_list
 
 
@@ -259,7 +263,8 @@ def optimal_strategy():
         node_cnt += 1
         # ======================================= display =======================================
         s, t = num_to_state(i)
-        if len(get_moved_states(s, t)) == 0:
+        dbg_switch = 0 if node_cnt < 490000 or node_cnt > 510000 else node_cnt
+        if len(get_moved_states(s, t, dbg_switch)) == 0:
             dtw[i] = 0
             par[i] = -1
 
@@ -397,6 +402,6 @@ def d2(num):
     print(state2d)
 
 
-# write_to_disk(*optimal_strategy())
+write_to_disk(*optimal_strategy())
 dtw, par = load_from_disk()
 print(dtw[:50], par[:50])
