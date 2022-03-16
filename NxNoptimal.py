@@ -247,12 +247,13 @@ def unit_test():
     print(num_to_state(stn))
 
 
-def optimal_strategy():
-    # distance to win, 0 is leaf node
-    dtw = [-1] * total_state_num
-    # store the number of parent node, leaf nodes have no parents since the tree grows to the bottom
-    # -2 means un-initialized, -1 means leaf node
-    par = [-2] * total_state_num
+def optimal_strategy(opstrategy_only=0, dtw=None, par=None):
+    if opstrategy_only == 0:
+        # distance to win, 0 is leaf node
+        dtw = [-1] * total_state_num
+        # store the number of parent node, leaf nodes have no parents since the tree grows to the bottom
+        # -2 means un-initialized, -1 means leaf node
+        par = [-2] * total_state_num
 
     bexp = []  # expanded when assuming black to win
 
@@ -278,7 +279,7 @@ def optimal_strategy():
             print(f"========================current distance {current_distance}===========================")
             for i in range(total_state_num):
                 if i % 10000 == 0:
-                    print(f"---- inspected: {i}/{total_state_num} ------")
+                    print(f"---- current distance {current_distance}, inspected: {i}/{total_state_num} ------")
                 if i % 2 != opside:
                     continue
                 if current_distance % 2 == 0:  # dis0, color winside turn
@@ -307,7 +308,7 @@ def optimal_strategy():
                                 bexp.append(idx)
 
                 else:  # dis1, color opside turn
-                    best_option_for_black = -2
+                    best_option_for_opside = -2
                     best_state_num = -1
                     for j in state_list:
                         # ======================================= display =======================================
@@ -319,20 +320,23 @@ def optimal_strategy():
                         state_num_of_j = state_to_num(j, winside)  # evaluate the state of white's turn
                         # if there is any option for black that is un-initilized, then this node has dtw more than current depth
                         if dtw[state_num_of_j] == -1:
-                            best_option_for_black = -2
+                            best_option_for_opside = -2
                             break
                         # otherwise
-                        if dtw[state_num_of_j] > best_option_for_black:
-                            best_option_for_black = dtw[state_num_of_j]
+                        if dtw[state_num_of_j] > best_option_for_opside:
+                            best_option_for_opside = dtw[state_num_of_j]
                             best_state_num = state_num_of_j
-                    if best_option_for_black != -2:
-                        dtw[i] = best_option_for_black + 1
+                    if best_option_for_opside != -2:
+                        dtw[i] = best_option_for_opside + 1
                         par[i] = best_state_num
                         if winside == 1:
                             bexp.append(i)
         return node_cnt, dtw, par
 
-    node_cnt, dtw, par = side_search(0, 1, dtw, par)
+    if opstrategy_only == 0:
+        node_cnt, dtw, par = side_search(0, 1, dtw, par)
+    else:
+        node_cnt = 1
     _, dtw, par = side_search(1, node_cnt, dtw, par)
     for i in range(len(dtw)):
         if dtw[i] == -1:  # draw or illegal state
@@ -440,8 +444,6 @@ piece_position_table, inv_piece_position_table = make_position_table(4, position
 side_position_table, inv_side_position_table = make_position_table(2, side_combinations, 4)
 
 
-
-
 # dtw, par = optimal_strategy()
 
 def d2(num):
@@ -453,6 +455,8 @@ def d2(num):
 
 
 # write_to_disk(*optimal_strategy())
+dtw, par = load_from_disk(file_name='NxNoptimal')
+write_to_disk(*optimal_strategy(1, dtw, par))
 dtw, par = load_from_disk()
 # display(config.init_chess_state, 0, dtw, par)
 question(config.question_state)
